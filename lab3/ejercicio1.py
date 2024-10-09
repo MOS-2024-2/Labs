@@ -1,87 +1,79 @@
-# Código completo y limpio para implementar el método de Newton-Raphson
-
 import numpy as np
 import sympy as sp
 import matplotlib.pyplot as plt
 
-# Definir la función y sus derivadas usando Sympy
+# Inicianilizacion de las funciones 
 x = sp.symbols('x')
 f = 3*x**3 - 10*x**2 - 56*x + 50
-f_prime = sp.diff(f, x)
-f_double_prime = sp.diff(f_prime, x)
+f_prima = sp.diff(f, x)
+f_segunda = sp.diff(f_prima, x)
 
-# Funciones de Python para la evaluación numérica
+# Convertimos las funciones simbolicas a funciones numericas
 f_func = sp.lambdify(x, f, 'numpy')
-f_prime_func = sp.lambdify(x, f_prime, 'numpy')
-f_double_prime_func = sp.lambdify(x, f_double_prime, 'numpy')
+f_prima_func = sp.lambdify(x, f_prima, 'numpy')
+f_segunda_func = sp.lambdify(x, f_segunda, 'numpy')
 
-# Método de Newton-Raphson ajustado al pseudocódigo
-def newton_raphson_pseudocode_exact(x0, alpha):
-    x_current = x0
-    iterations = [x_current]
-    convergencia = 0.001
-    while abs(f_prime_func(x_current)) > convergencia:
-        f_prime_x = f_prime_func(x_current)
-        f_double_prime_x = f_double_prime_func(x_current)
-        x_next = x_current - alpha * f_prime_x / f_double_prime_x
-        iterations.append(x_next)
-        x_current = x_next
-    return x_current, iterations
+# Metodo de Newton-Raphson 
+def newton_raphson(x0, alpha):
+    x_actual = x0
+    puntos = [x_actual]
+    tolerancia = 0.001
+    while abs(f_prima_func(x_actual)) > tolerancia:
+        f_prima_val = f_prima_func(x_actual)
+        f_segunda_val = f_segunda_func(x_actual)
+        siguiente_x = x_actual - alpha * f_prima_val / f_segunda_val
+        puntos.append(siguiente_x)
+        x_actual = siguiente_x
+    return x_actual, puntos
 
-# Parámetros iniciales
-x0_max = 4  # Punto de arranque para encontrar el máximo
-x0_min = -5  # Punto de arranque para encontrar el mínimo
-alpha_1 = 1.0  # Valor de alpha inicial
-alpha_2 = 0.6  # Segundo valor de alpha
+# Parametros iniciales
+x_inicial_max = 4  # Punto inicial para el maximo
+x_inicial_min = -5  # Punto inicial para el minimo
+alpha1 = 1.0  # Primer valor de alpha
+alpha2 = 0.6  # Segundo valor de alpha
 
-# Ejecutar el método para encontrar el máximo con los dos valores de alpha
-optimum_alpha_1_max, iterations_alpha_1_max = newton_raphson_pseudocode_exact(x0_max, alpha_1)
-optimum_alpha_2_max, iterations_alpha_2_max = newton_raphson_pseudocode_exact(x0_max, alpha_2)
+# encontramos el máximo con los dos valores de alpha
+optimo_max_1, iter_max_1 = newton_raphson(x_inicial_max, alpha1)
+optimo_max_2, iter_max_2 = newton_raphson(x_inicial_max, alpha2)
 
-# Ejecutar el método para encontrar el mínimo con los dos valores de alpha
-optimum_alpha_1_min, iterations_alpha_1_min = newton_raphson_pseudocode_exact(x0_min, alpha_1)
-optimum_alpha_2_min, iterations_alpha_2_min = newton_raphson_pseudocode_exact(x0_min, alpha_2)
+#enncontramos el mínimo con los dos valores de alpha
+optimo_min_1, iter_min_1 = newton_raphson(x_inicial_min, alpha1)
+optimo_min_2, iter_min_2 = newton_raphson(x_inicial_min, alpha2)
 
-# Generar los puntos para la gráfica
+
 x_vals = np.linspace(-6, 6, 400)
 y_vals = f_func(x_vals)
-
-# Gráfica de los resultados ajustados para mostrar iteraciones y óptimos
 plt.figure(figsize=(8, 10))
 
-# Subplot 1: Raíces de la función (igual que antes, ya correcta)
+# Grafica 1
 plt.subplot(2, 1, 1)
 plt.plot(x_vals, y_vals, label="f(x)", color="blue")
-plt.scatter([optimum_alpha_1_max], [f_func(optimum_alpha_1_max)], color="red", label="Max roots", zorder=5)
-plt.scatter([optimum_alpha_1_min], [f_func(optimum_alpha_1_min)], color="green", label="Min roots", zorder=5)
+plt.scatter([optimo_max_1], [f_func(optimo_max_1)], color="red", label="Raíces máximas")
+plt.scatter([optimo_min_1], [f_func(optimo_min_1)], color="green", label="Raíces mínimas")
 plt.legend()
-plt.title("Roots of the function")
+plt.title("Raíces de la función")
 plt.xlabel("x")
 plt.ylabel("f(x)")
 
-# Subplot 2: Iteraciones con los puntos intermedios y los óptimos (ajustado a la salida esperada)
+# Grafica 2
 plt.subplot(2, 1, 2)
 plt.plot(x_vals, y_vals, label="f(x)", color="blue")
 
 # Iteraciones con Alpha = 1
-plt.scatter(iterations_alpha_1_max, f_func(np.array(iterations_alpha_1_max)), color="purple", label="Alpha = 1", zorder=5, marker='o', edgecolor='red', facecolors='none')
-plt.scatter(iterations_alpha_1_min, f_func(np.array(iterations_alpha_1_min)), color="purple", zorder=5, marker='o', edgecolor='red', facecolors='none')
+plt.scatter(iter_max_1, f_func(np.array(iter_max_1)), color="purple", label="Alpha = 1", marker='o', edgecolor='red', facecolors='none')
+plt.scatter(iter_min_1, f_func(np.array(iter_min_1)), color="purple", marker='o', edgecolor='red', facecolors='none')
 
 # Iteraciones con Alpha = 0.6
-plt.scatter(iterations_alpha_2_max, f_func(np.array(iterations_alpha_2_max)), color="green", label="Alpha = 0.6", zorder=5, marker='o', edgecolor='green', facecolors='none')
-plt.scatter(iterations_alpha_2_min, f_func(np.array(iterations_alpha_2_min)), color="green", zorder=5, marker='o', edgecolor='green', facecolors='none')
+plt.scatter(iter_max_2, f_func(np.array(iter_max_2)), color="green", label="Alpha = 0.6", marker='o', edgecolor='green', facecolors='none')
+plt.scatter(iter_min_2, f_func(np.array(iter_min_2)), color="green", marker='o', edgecolor='green', facecolors='none')
 
-# Marcar los puntos óptimos
-plt.scatter([optimum_alpha_1_max], [f_func(optimum_alpha_1_max)], color="red", label="Optimum Alpha = 1", zorder=6, marker='o')
-plt.scatter([optimum_alpha_2_max], [f_func(optimum_alpha_2_max)], color="red", zorder=6, marker='o')
-
-plt.scatter([optimum_alpha_1_min], [f_func(optimum_alpha_1_min)], color="green", label="Optimum Alpha = 0.6", zorder=6, marker='o')
-plt.scatter([optimum_alpha_2_min], [f_func(optimum_alpha_2_min)], color="green", zorder=6, marker='o')
-
-# Etiquetas y leyendas
-
+# Marcar los puntos optimos
+plt.scatter([optimo_max_1], [f_func(optimo_max_1)], color="red", label="Óptimo Alpha = 1", marker='o')
+plt.scatter([optimo_max_2], [f_func(optimo_max_2)], color="red", marker='o')
+plt.scatter([optimo_min_1], [f_func(optimo_min_1)], color="green", label="Óptimo Alpha = 0.6", marker='o')
+plt.scatter([optimo_min_2], [f_func(optimo_min_2)], color="green", marker='o')
 plt.legend()
-plt.title("Iterations")
+plt.title("Iteraciones")
 plt.xlabel("x")
 plt.ylabel("f(x)")
 plt.tight_layout()
