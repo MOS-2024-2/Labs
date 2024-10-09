@@ -1,80 +1,61 @@
-# Código completo y estructurado para el Ejercicio 2
-
 import numpy as np
 import sympy as sp
 import matplotlib.pyplot as plt
 
-# Definir la función y sus derivadas usando Sympy
+# inicializacion de las funciones
 x = sp.symbols('x')
-f = x**5 - 8*x**3 + 10*x + 6  # Función a analizar
-f_prime = sp.diff(f, x)  # Primera derivada
-f_double_prime = sp.diff(f_prime, x)  # Segunda derivada
+f = x**5 - 8*x**3 + 10*x + 6 
+f_prima = sp.diff(f, x)  # Derivada primera
+f_segunda = sp.diff(f_prima, x)  # Derivada segunda
 
-# Funciones de Python para la evaluación numérica
+# Convertimos las funciones a versiones que se puedan evaluar numericamente
 f_func = sp.lambdify(x, f, 'numpy')
-f_prime_func = sp.lambdify(x, f_prime, 'numpy')
-f_double_prime_func = sp.lambdify(x, f_double_prime, 'numpy')
+f_prima_func = sp.lambdify(x, f_prima, 'numpy')
+f_segunda_func = sp.lambdify(x, f_segunda, 'numpy')
 
-# Método de Newton-Raphson ajustado para encontrar extremos locales
-def newton_raphson_local_extrema(x0, alpha=1.0):
-    x_current = x0
-    while abs(f_prime_func(x_current)) > 0.001:
-        f_prime_x = f_prime_func(x_current)
-        f_double_prime_x = f_double_prime_func(x_current)
-        x_next = x_current - alpha * f_prime_x / f_double_prime_x
-        x_current = x_next
-    return x_current
+# Encontramos extremos usando Newton-Raphson
+def newton_raphson_extremos(x0, alpha=1.0):
+    x_actual = x0
+    while abs(f_prima_func(x_actual)) > 0.001:
+        f_prima_val = f_prima_func(x_actual)
+        f_segunda_val = f_segunda_func(x_actual)
+        x_siguiente = x_actual - alpha * f_prima_val / f_segunda_val
+        x_actual = x_siguiente
+    return x_actual
 
-# Intervalo de evaluación
+# Definimos el rango para evaluar la funcion
 x_vals = np.linspace(-3, 3, 400)
 y_vals = f_func(x_vals)
+puntos_inicio = np.linspace(-3, 3, 10)  
+extremos_locales = []
 
-# Inicialización de puntos de inicio para buscar extremos locales
-starting_points = np.linspace(-3, 3, 10)  # Puntos iniciales para iterar
-local_extrema = []
+# Buscamos extremos locales con Newton-Raphson
+for x0 in puntos_inicio:
+    extremo = newton_raphson_extremos(x0)
+    if extremo not in extremos_locales: 
+        extremos_locales.append(extremo)
 
-# Encontrar los extremos locales con Newton-Raphson
-for x0 in starting_points:
-    extremum = newton_raphson_local_extrema(x0)
-    if extremum not in local_extrema:  # Evitar agregar duplicados
-        local_extrema.append(extremum)
+# Convertimos a un array, eliminamos duplicados y redondeamos 
+extremos_locales = np.array(extremos_locales)
+extremos_locales = np.round(extremos_locales, decimals=5)  
+extremos_locales = np.unique(extremos_locales)  
 
-# Convertir los extremos locales a numpy para facilitar el filtrado
-local_extrema = np.array(local_extrema)
-local_extrema = np.round(local_extrema, decimals=5)  # Redondeo para evitar valores muy cercanos
-local_extrema = np.unique(local_extrema)  # Filtrar valores únicos
+# Evaluamos la funcion
+y_extremos = f_func(extremos_locales)
+min_global = extremos_locales[np.argmin(y_extremos)]
+max_global = extremos_locales[np.argmax(y_extremos)]
 
-# Evaluar los extremos locales en la función
-y_extrema = f_func(local_extrema)
-
-# Encontrar el máximo y mínimo globales
-min_global = local_extrema[np.argmin(y_extrema)]
-max_global = local_extrema[np.argmax(y_extrema)]
-
-# Gráfica de la función y los extremos
+# Graficar
 plt.figure(figsize=(8, 8))
-
-# Graficar la función
 plt.plot(x_vals, y_vals, label="f(x)", color="blue")
-
-# Marcar los mínimos locales en rojo
-plt.scatter(local_extrema[y_extrema < 0], f_func(local_extrema[y_extrema < 0]), color="red", label="Min roots", zorder=5)
-
-# Marcar los máximos locales en verde
-plt.scatter(local_extrema[y_extrema > 0], f_func(local_extrema[y_extrema > 0]), color="red", label="Max roots", zorder=5)
-
-# Marcar el mínimo global en negro
-plt.scatter([min_global], [f_func(min_global)], color="black", label="Global minimum", zorder=6)
-
-# Marcar el máximo global en negro
-plt.scatter([max_global], [f_func(max_global)], color="black", label="Global maximum", zorder=6)
-
-# Etiquetas y leyenda ajustadas
-plt.title("Roots of the function")
+plt.scatter(extremos_locales[y_extremos < 0], f_func(extremos_locales[y_extremos < 0]), color="red", label="Mínimos locales", zorder=5)
+plt.scatter(extremos_locales[y_extremos > 0], f_func(extremos_locales[y_extremos > 0]), color="green", label="Máximos locales", zorder=5)
+plt.scatter([min_global], [f_func(min_global)], color="black", label="Mínimo global", zorder=6)
+plt.scatter([max_global], [f_func(max_global)], color="black", label="Máximo global", zorder=6)
+plt.title("Extremos de la función")
 plt.xlabel("x")
 plt.ylabel("f(x)")
 plt.legend()
 plt.grid(True)
-
-# Mostrar la gráfica ajustada
 plt.show()
+
