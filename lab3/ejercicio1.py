@@ -58,16 +58,10 @@ plt.ylabel("f(x)")
 # Grafica 2
 plt.subplot(2, 1, 2)
 plt.plot(x_vals, y_vals, label="f(x)", color="blue")
-
-# Iteraciones con Alpha = 1
 plt.scatter(iter_max_1, f_func(np.array(iter_max_1)), color="purple", label="Alpha = 1", marker='o', edgecolor='red', facecolors='none')
 plt.scatter(iter_min_1, f_func(np.array(iter_min_1)), color="purple", marker='o', edgecolor='red', facecolors='none')
-
-# Iteraciones con Alpha = 0.6
 plt.scatter(iter_max_2, f_func(np.array(iter_max_2)), color="green", label="Alpha = 0.6", marker='o', edgecolor='green', facecolors='none')
 plt.scatter(iter_min_2, f_func(np.array(iter_min_2)), color="green", marker='o', edgecolor='green', facecolors='none')
-
-# Marcar los puntos optimos
 plt.scatter([optimo_max_1], [f_func(optimo_max_1)], color="red", label="Óptimo Alpha = 1", marker='o')
 plt.scatter([optimo_max_2], [f_func(optimo_max_2)], color="red", marker='o')
 plt.scatter([optimo_min_1], [f_func(optimo_min_1)], color="green", label="Óptimo Alpha = 0.6", marker='o')
