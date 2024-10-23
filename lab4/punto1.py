@@ -2,108 +2,108 @@ from pyomo.environ import *
 from pyomo.opt import SolverFactory
 import matplotlib.pyplot as plt
 
-# Función para eliminar componentes del modelo
-def delete_component(Model, comp_name):
-    list_del = [vr for vr in vars(Model)
-                if comp_name == vr
-                or vr.startswith(comp_name + '_index')
-                or vr.startswith(comp_name + '_domain')]
-    for kk in list_del:
-        Model.del_component(kk)
 
-# Crear el modelo
-Model = ConcreteModel()
+def eliminar_componente(Modelo, nombre_comp):
+    componentes_a_eliminar = [var for var in vars(Modelo)
+                              if nombre_comp == var
+                              or var.startswith(nombre_comp + '_index')
+                              or var.startswith(nombre_comp + '_domain')]
+    for comp in componentes_a_eliminar:
+        Modelo.del_component(comp)
 
-# Sets y parámetros
-numNodes = 5
-Model.N = RangeSet(1, numNodes)
 
-# Parámetros de hops
-Model.h = Param(Model.N, Model.N, mutable=True, initialize=999)
-Model.h[1,2], Model.h[1,3] = 1, 1
-Model.h[2,5], Model.h[3,4], Model.h[4,5] = 1, 1, 1
+modelo = ConcreteModel()
+
+# Conjuntos
+num_nodos = 5
+modelo.N = RangeSet(1, num_nodos)
+
+# Parámetros de saltos
+modelo.h = Param(modelo.N, modelo.N, mutable=True, initialize=999)
+modelo.h[1, 2], modelo.h[1, 3] = 1, 1
+modelo.h[2, 5], modelo.h[3, 4], modelo.h[4, 5] = 1, 1, 1
 
 # Parámetros de costos
-Model.c = Param(Model.N, Model.N, mutable=True, initialize=999)
-Model.c[1,2], Model.c[1,3] = 10, 5
-Model.c[2,5], Model.c[3,4], Model.c[4,5] = 10, 5, 5
+modelo.c = Param(modelo.N, modelo.N, mutable=True, initialize=999)
+modelo.c[1, 2], modelo.c[1, 3] = 10, 5
+modelo.c[2, 5], modelo.c[3, 4], modelo.c[4, 5] = 10, 5, 5
 
 # Variables binarias
-Model.x = Var(Model.N, Model.N, domain=Binary)
+modelo.x = Var(modelo.N, modelo.N, domain=Binary)
 
-# Función hops
-def hops_rule(Model):
-    return sum(Model.x[i,j] * Model.h[i,j] for i in Model.N for j in Model.N)
-Model.hops = Expression(rule=hops_rule)
+# Función para calcular los saltos totales
+def regla_saltos(modelo):
+    return sum(modelo.x[i, j] * modelo.h[i, j] for i in modelo.N for j in modelo.N)
+modelo.saltos = Expression(rule=regla_saltos)
 
-# Función costos
-def cost_rule(Model):
-    return sum(Model.x[i,j] * Model.c[i,j] for i in Model.N for j in Model.N)
-Model.cost = Expression(rule=cost_rule)
+# Función para calcular el costo total
+def regla_costo(modelo):
+    return sum(modelo.x[i, j] * modelo.c[i, j] for i in modelo.N for j in modelo.N)
+modelo.costo_total = Expression(rule=regla_costo)
 
 # Restricciones
-s, d = 1, 5  # Nodo origen y destino
+origen, destino = 1, 5  # Nodo de origen y nodo de destino
 
-def source_rule(Model, i):
-    if i == s:
-        return sum(Model.x[i, j] for j in Model.N) == 1
+def restriccion_origen(modelo, i):
+    if i == origen:
+        return sum(modelo.x[i, j] for j in modelo.N) == 1
     return Constraint.Skip
-Model.source = Constraint(Model.N, rule=source_rule)
+modelo.restriccion_origen = Constraint(modelo.N, rule=restriccion_origen)
 
-def destination_rule(Model, j):
-    if j == d:
-        return sum(Model.x[i,j] for i in Model.N) == 1
+def restriccion_destino(modelo, j):
+    if j == destino:
+        return sum(modelo.x[i, j] for i in modelo.N) == 1
     return Constraint.Skip
-Model.destination = Constraint(Model.N, rule=destination_rule)
+modelo.restriccion_destino = Constraint(modelo.N, rule=restriccion_destino)
 
-def intermediate_rule(Model, i):
-    if i != s and i != d:
-        return sum(Model.x[i,j] for j in Model.N) - sum(Model.x[j,i] for j in Model.N) == 0
+def restriccion_intermedia(modelo, i):
+    if i != origen and i != destino:
+        return sum(modelo.x[i, j] for j in modelo.N) - sum(modelo.x[j, i] for j in modelo.N) == 0
     return Constraint.Skip
-Model.intermediate = Constraint(Model.N, rule=intermediate_rule)
+modelo.restriccion_intermedia = Constraint(modelo.N, rule=restriccion_intermedia)
 
-# Listas para almacenar los resultados del frente de Pareto
-f1_vec = []
-f2_vec = []
 
-# Valores de epsilon (probaremos de 3 hacia abajo)
-epsilon_values = [3, 2, 1]  # Reducimos epsilon progresivamente
+lista_saltos = []
+lista_costos = []
 
-# Iterar sobre los diferentes valores de epsilon
-for epsilon in epsilon_values:
-    # Definir la función objetivo (minimizar los costos)
-    Model.obj = Objective(expr=Model.cost, sense=minimize)
+
+valores_epsilon = [3, 2, 1]
+
+
+for epsilon in valores_epsilon:
+    # Funcion objetivo
+    modelo.objetivo = Objective(expr=modelo.costo_total, sense=minimize)
     
-    # Agregar restricción de hops (e-Constraint)
-    Model.epsilon_constraint = Constraint(expr=Model.hops <= epsilon)
-    
-    # Resolver el modelo
+    # Restriccion
+    modelo.restriccion_epsilon = Constraint(expr=modelo.saltos <= epsilon)
+   
     solver = SolverFactory('glpk')
-    result = solver.solve(Model, tee=False)
+    resultado = solver.solve(modelo, tee=False)
     
-    # Chequear si el solver encontró una solución óptima
-    if (result.solver.termination_condition == TerminationCondition.optimal):
-        f1_vec.append(value(Model.hops))  # Guardamos los hops
-        f2_vec.append(value(Model.cost))  # Guardamos los costos
-        print(f"Solución para epsilon={epsilon}: Costos={value(Model.cost)}, Hops={value(Model.hops)}")
+    # Verificamos si el solver encontró una solución óptima
+    if (resultado.solver.termination_condition == TerminationCondition.optimal):
+        lista_saltos.append(value(modelo.saltos))    # Guardamos los saltos
+        lista_costos.append(value(modelo.costo_total))  # Guardamos los costos
+        print(f"Solución para epsilon={epsilon}: Costos={value(modelo.costo_total)}, Saltos={value(modelo.saltos)}")
         
-        # Imprimir las variables x[i,j] para mostrar la ruta seleccionada
-        for i in Model.N:
-            for j in Model.N:
-                if value(Model.x[i,j]) > 0.5:
+        # Imprimimos las variables x[i,j] para mostrar la ruta seleccionada
+        for i in modelo.N:
+            for j in modelo.N:
+                if value(modelo.x[i, j]) > 0.5:
                     print(f"Enlace seleccionado: {i} -> {j}")
     else:
         print(f"No se encontró solución para epsilon={epsilon}")
     
-    # Eliminar componentes para la siguiente iteración
-    delete_component(Model, 'obj')
-    delete_component(Model, 'epsilon_constraint')
+  
+    eliminar_componente(modelo, 'objetivo')
+    eliminar_componente(modelo, 'restriccion_epsilon')
 
-# Graficar el frente óptimo de Pareto con los ejes invertidos
-plt.plot(f1_vec , f2_vec,'o-.')  # Invertimos los ejes (hops en x, costos en y)
+
+plt.plot(lista_saltos, lista_costos, 'o-.')
 plt.title('Frente Óptimo de Pareto (método e-Constraint)')
-plt.xlabel('Hops (F1)')  # Ahora los hops estarán en el eje x
-plt.ylabel('Costos (F2)')  # Los costos estarán en el eje y
+plt.xlabel('Saltos (F1)')
+plt.ylabel('Costos (F2)')
 plt.grid(True)
 plt.show()
+
 
