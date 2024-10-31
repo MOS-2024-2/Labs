@@ -39,7 +39,7 @@ def simplex(c, A, b):
             solution[np.argmax(tableau[i, :c.shape[0]])] = tableau[i, -1]
     
    
-    z_opt = -tableau[-1, -1]
+    z_opt = tableau[-1, -1]
     
     return solution, z_opt
 
